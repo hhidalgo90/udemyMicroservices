@@ -1,0 +1,64 @@
+ spring:
+   cloud:
+     gateway:
+       routes:
+         - id: servicio-oauth
+           uri: lb://servicio-oauth
+           predicates:
+             - Path=/servicioOauth/**
+           filters:
+             - StripPrefix=1
+             - RemoveRequestHeader=Cookie
+         - id: microservicio-usuarios
+           uri: lb://microservicio-usuarios
+           predicates:
+             - Path=/apiUsuario/**
+             - Method=GET, POST, PUT, DELETE
+           filters:
+            - StripPrefix=1
+         - id: microservicio-productos
+           uri: lb://microservicio-productos
+           predicates:
+             - Path=/apiProducto/**
+             - Method=GET, POST, PUT, DELETE
+           filters:
+             - name: CircuitBreaker
+               args:
+                 name: productos
+                 statusCodes: 500
+                 fallbackUri: forward:/apiItem/api/items/6/cantidad/5
+             - StripPrefix=1
+             - name: FiltroPersonalizado
+               args:
+                 mensaje: Mensaje personalizado para prueba
+                 cookieNombre: usuario
+                 cookieValor: Hector
+         - id: microservicio-item
+           uri: lb://microservicio-item
+           predicates:
+             - Path=/apiItem/**
+           filters:
+             - StripPrefix=1
+             #Agregagamos mas filtros que vienen de fabrica
+             - AddRequestHeader=token-request, 123456
+             - AddResponseHeader=token-response, 7776666
+             - AddRequestParameter=nombre, Hector
+
+ resilience4j:
+   circuitbreaker:
+     configs:
+       valorDefecto:
+         slidingWindowSize: 6
+         failureRateThreshold: 50
+         waitDurationInOpenState: 20s
+         permittedNumberOfCallsInHalfOpenState: 4
+     instances:
+       productos:
+         baseConfig: valorDefecto
+   timelimiter:
+     configs:
+       valorDefecto:
+         timeoutDuration: 6s
+     instances:
+       productos:
+         baseConfig: valorDefecto

@@ -1,0 +1,55 @@
+version: '3.7'
+services:
+  contenedor-server-config:
+    image: config-server:v1
+    ports:
+      - "8888:8888"
+    restart: always
+    networks:
+      - springcloudnetwork
+  servicio-eureka:
+    image: servicio-eureka-server:v1
+    ports:
+      - "8761:8761"
+    restart: always
+    networks:
+      - springcloudnetwork
+  zuul-apigateway:
+    image: zuul-apigateway:v2
+    ports:
+      - "8090:8090"
+    restart: always
+    networks:
+      - springcloudnetwork
+  contenedor-mysql:
+    image: mysql:latest
+    ports:
+      - "3306:3306"
+    restart: always
+    networks:
+      - springcloudnetwork
+    environment:
+      - MYSQL_DATABASE=spring_cloud
+      - MYSQL_ROOT_PASSWORD=Hector123
+  microservicio-productos:
+    image: microservicio-productos:v1
+    restart: always
+    networks:
+      - springcloudnetwork
+    depends_on:
+      - contenedor-server-config
+      - servicio-eureka
+      - contenedor-mysql
+  microservicio-items:
+    image: microservicio-items:v1
+    ports:
+      - "8033:8033"
+    restart: always
+    networks:
+      - springcloudnetwork
+    depends_on:
+      - contenedor-server-config
+      - servicio-eureka
+      - microservicio-productos
+networks:
+  springcloudnetwork:
